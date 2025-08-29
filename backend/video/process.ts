@@ -1,11 +1,9 @@
 import { api, APIError } from "encore.dev/api";
-import { Header } from "encore.dev/api";
 import { videoDB } from "./db";
 import { videoBucket, thumbnailBucket } from "./storage";
 
 interface ProcessVideoRequest {
   videoId: number;
-  authorization?: Header<"Authorization">;
 }
 
 interface ProcessVideoResponse {
@@ -18,34 +16,6 @@ interface ProcessVideoResponse {
 export const processVideo = api<ProcessVideoRequest, ProcessVideoResponse>(
   { expose: true, method: "POST", path: "/videos/:videoId/process" },
   async (req) => {
-    // Simple token verification (matching the auth service logic)
-    const token = req.authorization?.replace("Bearer ", "");
-    
-    if (!token) {
-      throw APIError.unauthenticated("Missing authentication token");
-    }
-
-    try {
-      // Decode the simple token (matching auth service logic)
-      const decoded = Buffer.from(token, 'base64').toString('utf-8');
-      const [user, timestamp] = decoded.split(':');
-      
-      if (user !== 'admin') {
-        throw APIError.unauthenticated("Invalid token");
-      }
-
-      // Check if token is not older than 24 hours
-      const tokenTime = parseInt(timestamp);
-      const now = Date.now();
-      const twentyFourHours = 24 * 60 * 60 * 1000;
-      
-      if (now - tokenTime > twentyFourHours) {
-        throw APIError.unauthenticated("Token expired");
-      }
-    } catch (error) {
-      throw APIError.unauthenticated("Invalid authentication token");
-    }
-
     const video = await videoDB.queryRow<{ id: number; title: string }>`
       SELECT id, title FROM videos WHERE id = ${req.videoId}
     `;
