@@ -4,7 +4,6 @@ import { AuthProvider } from './contexts/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import HomePage from './pages/HomePage';
 import VideoPage from './pages/VideoPage';
-import PlayerPage from './pages/PlayerPage';
 import UploadPage from './pages/UploadPage';
 
 export default function App() {
@@ -15,7 +14,6 @@ export default function App() {
           <Routes>
             <Route path="/" element={<HomePage />} />
             <Route path="/videos/:id" element={<VideoPage />} />
-            <Route path="/player/:id" element={<PlayerPage />} />
             <Route 
               path="/upload" 
               element={

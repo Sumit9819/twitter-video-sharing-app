@@ -5,32 +5,21 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/components/ui/use-toast';
-import { ArrowLeft, Copy, ExternalLink, Twitter, CheckCircle } from 'lucide-react';
+import { ArrowLeft, Copy, ExternalLink, Twitter, CheckCircle, Globe } from 'lucide-react';
 import backend from '~backend/client';
 import type { Video } from '~backend/video/types';
-import { useMetaTags } from '../hooks/useMetaTags';
 
 export default function VideoPage() {
   const { id } = useParams<{ id: string }>();
   const [video, setVideo] = useState<Video | null>(null);
   const [loading, setLoading] = useState(true);
-  const [copied, setCopied] = useState(false);
+  const [copied, setCopied] = useState<string | null>(null);
   const { toast } = useToast();
 
-  const shareUrl = video ? `${window.location.origin}/videos/${video.id}` : '';
-  const playerUrl = video ? `${window.location.origin}/player/${video.id}` : '';
-
-  // Set meta tags for Twitter Card
-  useMetaTags({
-    title: video?.title,
-    description: video?.description || 'Watch this video',
-    image: video?.thumbnailUrl,
-    url: shareUrl,
-    twitterCard: 'player',
-    twitterPlayer: playerUrl,
-    twitterPlayerWidth: '1280',
-    twitterPlayerHeight: '720',
-  });
+  const baseUrl = window.location.origin;
+  const shareUrl = video ? `${baseUrl}/api/video/meta/${video.id}` : '';
+  const playerUrl = video ? `${baseUrl}/api/video/player/${video.id}` : '';
+  const frontendUrl = video ? `${baseUrl}/videos/${video.id}` : '';
 
   useEffect(() => {
     if (id) {
@@ -54,15 +43,15 @@ export default function VideoPage() {
     }
   };
 
-  const copyToClipboard = async () => {
+  const copyToClipboard = async (text: string, type: string) => {
     try {
-      await navigator.clipboard.writeText(shareUrl);
-      setCopied(true);
+      await navigator.clipboard.writeText(text);
+      setCopied(type);
       toast({
         title: 'Copied!',
-        description: 'Share URL copied to clipboard',
+        description: `${type} URL copied to clipboard`,
       });
-      setTimeout(() => setCopied(false), 2000);
+      setTimeout(() => setCopied(null), 2000);
     } catch (error) {
       console.error('Failed to copy:', error);
       toast({
@@ -79,6 +68,11 @@ export default function VideoPage() {
       const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}&url=${encodeURIComponent(shareUrl)}`;
       window.open(twitterUrl, '_blank');
     }
+  };
+
+  const testTwitterCard = () => {
+    const cardValidatorUrl = `https://cards-dev.twitter.com/validator?url=${encodeURIComponent(shareUrl)}`;
+    window.open(cardValidatorUrl, '_blank');
   };
 
   if (loading) {
@@ -157,31 +151,31 @@ export default function VideoPage() {
             </div>
           </div>
 
-          <div className="lg:col-span-1">
+          <div className="lg:col-span-1 space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>Share this video</CardTitle>
+                <CardTitle>Share on Twitter</CardTitle>
                 <CardDescription>
-                  Share on Twitter to show an embedded video player
+                  Use this URL to share on Twitter with an embedded video player
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="shareUrl">Share URL</Label>
+                  <Label htmlFor="twitterUrl">Twitter Share URL</Label>
                   <div className="flex gap-2">
                     <Input
-                      id="shareUrl"
+                      id="twitterUrl"
                       value={shareUrl}
                       readOnly
-                      className="flex-1"
+                      className="flex-1 text-xs"
                     />
                     <Button
                       variant="outline"
                       size="icon"
-                      onClick={copyToClipboard}
+                      onClick={() => copyToClipboard(shareUrl, 'Twitter')}
                       className="shrink-0"
                     >
-                      {copied ? (
+                      {copied === 'Twitter' ? (
                         <CheckCircle className="w-4 h-4 text-green-600" />
                       ) : (
                         <Copy className="w-4 h-4" />
@@ -190,30 +184,114 @@ export default function VideoPage() {
                   </div>
                 </div>
 
-                <Button
-                  onClick={shareOnTwitter}
-                  className="w-full gap-2 bg-blue-500 hover:bg-blue-600"
-                >
-                  <Twitter className="w-4 h-4" />
-                  Share on Twitter
-                </Button>
+                <div className="flex gap-2">
+                  <Button
+                    onClick={shareOnTwitter}
+                    className="flex-1 gap-2 bg-blue-500 hover:bg-blue-600"
+                  >
+                    <Twitter className="w-4 h-4" />
+                    Share on Twitter
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={testTwitterCard}
+                    className="gap-2"
+                  >
+                    <Globe className="w-4 h-4" />
+                    Test Card
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
 
-                <div className="text-sm text-gray-600 space-y-2">
-                  <p className="font-medium">How it works:</p>
-                  <ul className="space-y-1 text-xs">
-                    <li>• Copy the share URL above</li>
-                    <li>• Paste it in a Twitter post</li>
-                    <li>• Twitter will show an embedded video player</li>
-                    <li>• Clicking the video redirects to your destination URL</li>
+            <Card>
+              <CardHeader>
+                <CardTitle>Additional URLs</CardTitle>
+                <CardDescription>
+                  Other URLs for testing and sharing
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="playerUrl">Player URL</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      id="playerUrl"
+                      value={playerUrl}
+                      readOnly
+                      className="flex-1 text-xs"
+                    />
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => copyToClipboard(playerUrl, 'Player')}
+                      className="shrink-0"
+                    >
+                      {copied === 'Player' ? (
+                        <CheckCircle className="w-4 h-4 text-green-600" />
+                      ) : (
+                        <Copy className="w-4 h-4" />
+                      )}
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="frontendUrl">Frontend URL</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      id="frontendUrl"
+                      value={frontendUrl}
+                      readOnly
+                      className="flex-1 text-xs"
+                    />
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => copyToClipboard(frontendUrl, 'Frontend')}
+                      className="shrink-0"
+                    >
+                      {copied === 'Frontend' ? (
+                        <CheckCircle className="w-4 h-4 text-green-600" />
+                      ) : (
+                        <Copy className="w-4 h-4" />
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>How to use</CardTitle>
+              </CardHeader>
+              <CardContent className="text-sm text-gray-600 space-y-3">
+                <div>
+                  <p className="font-medium text-gray-900 mb-1">For Twitter:</p>
+                  <ol className="space-y-1 text-xs list-decimal list-inside">
+                    <li>Copy the "Twitter Share URL" above</li>
+                    <li>Paste it in a new Twitter post</li>
+                    <li>Twitter will automatically generate a video card</li>
+                    <li>Clicking the video redirects to your destination URL</li>
+                  </ol>
+                </div>
+
+                <div>
+                  <p className="font-medium text-gray-900 mb-1">Testing:</p>
+                  <ul className="space-y-1 text-xs list-disc list-inside">
+                    <li>Use the "Test Card" button to validate with Twitter</li>
+                    <li>Twitter may take a few minutes to fetch the card</li>
+                    <li>Make sure your video URLs are publicly accessible</li>
                   </ul>
                 </div>
 
-                <div className="text-sm text-gray-600 space-y-2 border-t pt-4">
-                  <p className="font-medium">Troubleshooting:</p>
-                  <ul className="space-y-1 text-xs">
-                    <li>• Twitter may take a few minutes to fetch the card</li>
-                    <li>• Try using Twitter's Card Validator to test</li>
-                    <li>• Make sure the video URL is publicly accessible</li>
+                <div className="border-t pt-3">
+                  <p className="font-medium text-gray-900 mb-1">Troubleshooting:</p>
+                  <ul className="space-y-1 text-xs list-disc list-inside">
+                    <li>Clear Twitter's cache using the Card Validator</li>
+                    <li>Ensure video files are properly uploaded and processed</li>
+                    <li>Check that all URLs return 200 status codes</li>
                   </ul>
                 </div>
               </CardContent>
