@@ -8,6 +8,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { ArrowLeft, Copy, ExternalLink, Twitter, CheckCircle } from 'lucide-react';
 import backend from '~backend/client';
 import type { Video } from '~backend/video/types';
+import { useMetaTags } from '../hooks/useMetaTags';
 
 export default function VideoPage() {
   const { id } = useParams<{ id: string }>();
@@ -15,6 +16,21 @@ export default function VideoPage() {
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
   const { toast } = useToast();
+
+  const shareUrl = video ? `${window.location.origin}/videos/${video.id}` : '';
+  const playerUrl = video ? `${window.location.origin}/player/${video.id}` : '';
+
+  // Set meta tags for Twitter Card
+  useMetaTags({
+    title: video?.title,
+    description: video?.description || 'Watch this video',
+    image: video?.thumbnailUrl,
+    url: shareUrl,
+    twitterCard: 'player',
+    twitterPlayer: playerUrl,
+    twitterPlayerWidth: '1280',
+    twitterPlayerHeight: '720',
+  });
 
   useEffect(() => {
     if (id) {
@@ -37,8 +53,6 @@ export default function VideoPage() {
       setLoading(false);
     }
   };
-
-  const shareUrl = video ? `${window.location.origin}/videos/${video.id}` : '';
 
   const copyToClipboard = async () => {
     try {
@@ -101,122 +115,112 @@ export default function VideoPage() {
   }
 
   return (
-    <>
-      {/* Meta tags for Twitter Card */}
-      <head>
-        <meta name="twitter:card" content="player" />
-        <meta name="twitter:title" content={video.title} />
-        <meta name="twitter:description" content={video.description || 'Watch this video'} />
-        <meta name="twitter:player" content={`${window.location.origin}/player/${video.id}`} />
-        <meta name="twitter:image" content={video.thumbnailUrl} />
-        <meta name="twitter:player:width" content="1280" />
-        <meta name="twitter:player:height" content="720" />
-        
-        <meta property="og:title" content={video.title} />
-        <meta property="og:description" content={video.description || 'Watch this video'} />
-        <meta property="og:image" content={video.thumbnailUrl} />
-        <meta property="og:url" content={shareUrl} />
-        <meta property="og:type" content="video.other" />
-      </head>
+    <div className="container mx-auto px-4 py-8">
+      <div className="max-w-4xl mx-auto">
+        <div className="mb-6">
+          <Link to="/" className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900">
+            <ArrowLeft className="w-4 h-4" />
+            Back to Home
+          </Link>
+        </div>
 
-      <div className="container mx-auto px-4 py-8">
-        <div className="max-w-4xl mx-auto">
-          <div className="mb-6">
-            <Link to="/" className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900">
-              <ArrowLeft className="w-4 h-4" />
-              Back to Home
-            </Link>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="lg:col-span-2">
+            <div className="aspect-video bg-gray-900 rounded-lg overflow-hidden mb-6">
+              <video
+                src={video.videoUrl}
+                poster={video.thumbnailUrl}
+                controls
+                className="w-full h-full"
+              >
+                Your browser does not support the video tag.
+              </video>
+            </div>
+
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 mb-4">{video.title}</h1>
+              {video.description && (
+                <p className="text-gray-700 mb-4">{video.description}</p>
+              )}
+              <div className="flex items-center gap-4 text-sm text-gray-500">
+                <span>Uploaded {new Date(video.createdAt).toLocaleDateString()}</span>
+                <a
+                  href={video.destinationUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800"
+                >
+                  <ExternalLink className="w-4 h-4" />
+                  Visit destination
+                </a>
+              </div>
+            </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div className="lg:col-span-2">
-              <div className="aspect-video bg-gray-900 rounded-lg overflow-hidden mb-6">
-                <video
-                  src={video.videoUrl}
-                  poster={video.thumbnailUrl}
-                  controls
-                  className="w-full h-full"
-                >
-                  Your browser does not support the video tag.
-                </video>
-              </div>
-
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900 mb-4">{video.title}</h1>
-                {video.description && (
-                  <p className="text-gray-700 mb-4">{video.description}</p>
-                )}
-                <div className="flex items-center gap-4 text-sm text-gray-500">
-                  <span>Uploaded {new Date(video.createdAt).toLocaleDateString()}</span>
-                  <a
-                    href={video.destinationUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800"
-                  >
-                    <ExternalLink className="w-4 h-4" />
-                    Visit destination
-                  </a>
+          <div className="lg:col-span-1">
+            <Card>
+              <CardHeader>
+                <CardTitle>Share this video</CardTitle>
+                <CardDescription>
+                  Share on Twitter to show an embedded video player
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="shareUrl">Share URL</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      id="shareUrl"
+                      value={shareUrl}
+                      readOnly
+                      className="flex-1"
+                    />
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={copyToClipboard}
+                      className="shrink-0"
+                    >
+                      {copied ? (
+                        <CheckCircle className="w-4 h-4 text-green-600" />
+                      ) : (
+                        <Copy className="w-4 h-4" />
+                      )}
+                    </Button>
+                  </div>
                 </div>
-              </div>
-            </div>
 
-            <div className="lg:col-span-1">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Share this video</CardTitle>
-                  <CardDescription>
-                    Share on Twitter to show an embedded video player
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="shareUrl">Share URL</Label>
-                    <div className="flex gap-2">
-                      <Input
-                        id="shareUrl"
-                        value={shareUrl}
-                        readOnly
-                        className="flex-1"
-                      />
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        onClick={copyToClipboard}
-                        className="shrink-0"
-                      >
-                        {copied ? (
-                          <CheckCircle className="w-4 h-4 text-green-600" />
-                        ) : (
-                          <Copy className="w-4 h-4" />
-                        )}
-                      </Button>
-                    </div>
-                  </div>
+                <Button
+                  onClick={shareOnTwitter}
+                  className="w-full gap-2 bg-blue-500 hover:bg-blue-600"
+                >
+                  <Twitter className="w-4 h-4" />
+                  Share on Twitter
+                </Button>
 
-                  <Button
-                    onClick={shareOnTwitter}
-                    className="w-full gap-2 bg-blue-500 hover:bg-blue-600"
-                  >
-                    <Twitter className="w-4 h-4" />
-                    Share on Twitter
-                  </Button>
+                <div className="text-sm text-gray-600 space-y-2">
+                  <p className="font-medium">How it works:</p>
+                  <ul className="space-y-1 text-xs">
+                    <li>• Copy the share URL above</li>
+                    <li>• Paste it in a Twitter post</li>
+                    <li>• Twitter will show an embedded video player</li>
+                    <li>• Clicking the video redirects to your destination URL</li>
+                  </ul>
+                </div>
 
-                  <div className="text-sm text-gray-600 space-y-2">
-                    <p className="font-medium">How it works:</p>
-                    <ul className="space-y-1 text-xs">
-                      <li>• Copy the share URL above</li>
-                      <li>• Paste it in a Twitter post</li>
-                      <li>• Twitter will show an embedded video player</li>
-                      <li>• Clicking the video redirects to your destination URL</li>
-                    </ul>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
+                <div className="text-sm text-gray-600 space-y-2 border-t pt-4">
+                  <p className="font-medium">Troubleshooting:</p>
+                  <ul className="space-y-1 text-xs">
+                    <li>• Twitter may take a few minutes to fetch the card</li>
+                    <li>• Try using Twitter's Card Validator to test</li>
+                    <li>• Make sure the video URL is publicly accessible</li>
+                  </ul>
+                </div>
+              </CardContent>
+            </Card>
           </div>
         </div>
       </div>
-    </>
+    </div>
   );
 }
