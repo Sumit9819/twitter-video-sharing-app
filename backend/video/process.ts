@@ -1,9 +1,12 @@
 import { api, APIError } from "encore.dev/api";
+import { Header } from "encore.dev/api";
 import { videoDB } from "./db";
 import { videoBucket, thumbnailBucket } from "./storage";
+import { auth } from "~encore/clients";
 
 interface ProcessVideoRequest {
   videoId: number;
+  authorization: Header<"Authorization">;
 }
 
 interface ProcessVideoResponse {
@@ -16,6 +19,13 @@ interface ProcessVideoResponse {
 export const processVideo = api<ProcessVideoRequest, ProcessVideoResponse>(
   { expose: true, method: "POST", path: "/videos/:videoId/process" },
   async (req) => {
+    // Verify authentication
+    const authResult = await auth.verifyToken({ authorization: req.authorization });
+    
+    if (!authResult.valid || !authResult.user?.isAdmin) {
+      throw APIError.unauthenticated("Admin access required");
+    }
+
     const video = await videoDB.queryRow<{ id: number; title: string }>`
       SELECT id, title FROM videos WHERE id = ${req.videoId}
     `;

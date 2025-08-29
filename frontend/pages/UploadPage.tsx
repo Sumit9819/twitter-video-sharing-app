@@ -7,9 +7,10 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/components/ui/use-toast';
-import { Upload, ArrowLeft, CheckCircle } from 'lucide-react';
+import { Upload, ArrowLeft, CheckCircle, LogOut } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import backend from '~backend/client';
+import { useAuth } from '../contexts/AuthContext';
+import { useAuthenticatedBackend } from '../hooks/useAuthenticatedBackend';
 
 export default function UploadPage() {
   const [title, setTitle] = useState('');
@@ -24,6 +25,8 @@ export default function UploadPage() {
   
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { logout } = useAuth();
+  const backend = useAuthenticatedBackend();
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
@@ -146,10 +149,23 @@ export default function UploadPage() {
     setVideoId(null);
   };
 
+  const handleLogout = () => {
+    logout();
+    navigate('/');
+  };
+
   if (completed) {
     return (
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-2xl mx-auto">
+          <div className="flex justify-between items-center mb-6">
+            <div></div>
+            <Button variant="outline" onClick={handleLogout} className="gap-2">
+              <LogOut className="w-4 h-4" />
+              Logout
+            </Button>
+          </div>
+          
           <Card className="text-center">
             <CardHeader>
               <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
@@ -185,11 +201,15 @@ export default function UploadPage() {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="max-w-2xl mx-auto">
-        <div className="mb-6">
+        <div className="flex justify-between items-center mb-6">
           <Link to="/" className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900">
             <ArrowLeft className="w-4 h-4" />
             Back to Home
           </Link>
+          <Button variant="outline" onClick={handleLogout} className="gap-2">
+            <LogOut className="w-4 h-4" />
+            Logout
+          </Button>
         </div>
 
         <Card>
