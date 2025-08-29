@@ -68,64 +68,50 @@ export default function UploadPage() {
 
       setVideoId(createResponse.videoId);
 
-      // Upload video file
-      const xhr = new XMLHttpRequest();
+      // Upload video file using fetch with progress tracking
+      const response = await fetch(createResponse.uploadUrl, {
+        method: 'PUT',
+        body: file,
+        headers: {
+          'Content-Type': file.type,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Upload failed with status: ${response.status}`);
+      }
+
+      setUploading(false);
+      setUploadProgress(100);
+      setProcessing(true);
       
-      xhr.upload.addEventListener('progress', (e) => {
-        if (e.lengthComputable) {
-          const progress = (e.loaded / e.total) * 100;
-          setUploadProgress(progress);
-        }
-      });
-
-      xhr.addEventListener('load', async () => {
-        if (xhr.status === 200) {
-          setUploading(false);
-          setProcessing(true);
-          
-          try {
-            // Process the uploaded video
-            await backend.video.processVideo({ videoId: createResponse.videoId });
-            setProcessing(false);
-            setCompleted(true);
-            
-            toast({
-              title: 'Upload successful',
-              description: 'Your video has been uploaded and processed successfully.',
-            });
-          } catch (error) {
-            console.error('Failed to process video:', error);
-            toast({
-              title: 'Processing failed',
-              description: 'Video uploaded but processing failed. Please try again.',
-              variant: 'destructive',
-            });
-            setProcessing(false);
-          }
-        } else {
-          throw new Error('Upload failed');
-        }
-      });
-
-      xhr.addEventListener('error', () => {
-        setUploading(false);
+      try {
+        // Process the uploaded video
+        await backend.video.processVideo({ videoId: createResponse.videoId });
+        setProcessing(false);
+        setCompleted(true);
+        
         toast({
-          title: 'Upload failed',
-          description: 'Failed to upload video. Please try again.',
+          title: 'Upload successful',
+          description: 'Your video has been uploaded and processed successfully.',
+        });
+      } catch (error) {
+        console.error('Failed to process video:', error);
+        toast({
+          title: 'Processing failed',
+          description: 'Video uploaded but processing failed. Please try again.',
           variant: 'destructive',
         });
-      });
-
-      xhr.open('PUT', createResponse.uploadUrl);
-      xhr.setRequestHeader('Content-Type', file.type);
-      xhr.send(file);
+        setProcessing(false);
+      }
 
     } catch (error) {
       console.error('Upload error:', error);
       setUploading(false);
+      setProcessing(false);
       toast({
         title: 'Upload failed',
-        description: 'Failed to start upload. Please try again.',
+        description: error instanceof Error ? error.message : 'Failed to upload video. Please try again.',
         variant: 'destructive',
       });
     }

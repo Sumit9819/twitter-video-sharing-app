@@ -2,7 +2,6 @@ import { api, APIError } from "encore.dev/api";
 import { Header } from "encore.dev/api";
 import { videoDB } from "./db";
 import { videoBucket } from "./storage";
-import { auth } from "~encore/clients";
 import type { CreateVideoRequest, UploadVideoResponse } from "./types";
 
 interface AuthenticatedCreateVideoRequest extends CreateVideoRequest {
@@ -13,11 +12,32 @@ interface AuthenticatedCreateVideoRequest extends CreateVideoRequest {
 export const createVideo = api<AuthenticatedCreateVideoRequest, UploadVideoResponse>(
   { expose: true, method: "POST", path: "/videos" },
   async (req) => {
-    // Verify authentication
-    const authResult = await auth.verifyToken({ authorization: req.authorization });
+    // Simple token verification (matching the auth service logic)
+    const token = req.authorization?.replace("Bearer ", "");
     
-    if (!authResult.valid || !authResult.user?.isAdmin) {
-      throw APIError.unauthenticated("Admin access required");
+    if (!token) {
+      throw APIError.unauthenticated("Missing authentication token");
+    }
+
+    try {
+      // Decode the simple token (matching auth service logic)
+      const decoded = Buffer.from(token, 'base64').toString('utf-8');
+      const [user, timestamp] = decoded.split(':');
+      
+      if (user !== 'admin') {
+        throw APIError.unauthenticated("Invalid token");
+      }
+
+      // Check if token is not older than 24 hours
+      const tokenTime = parseInt(timestamp);
+      const now = Date.now();
+      const twentyFourHours = 24 * 60 * 60 * 1000;
+      
+      if (now - tokenTime > twentyFourHours) {
+        throw APIError.unauthenticated("Token expired");
+      }
+    } catch (error) {
+      throw APIError.unauthenticated("Invalid authentication token");
     }
 
     // Insert video record into database
