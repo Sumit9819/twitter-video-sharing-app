@@ -16,7 +16,10 @@ export default function HomePage() {
 
   const loadVideos = async () => {
     try {
-      const response = await backend.video.listVideos();
+      const response = await backend.video.listVideos({
+        limit: 20,
+        offset: 0,
+      });
       setVideos(response.videos);
     } catch (error) {
       console.error('Failed to load videos:', error);
