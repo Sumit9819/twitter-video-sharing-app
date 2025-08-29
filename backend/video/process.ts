@@ -5,7 +5,7 @@ import { videoBucket, thumbnailBucket } from "./storage";
 
 interface ProcessVideoRequest {
   videoId: number;
-  authorization: Header<"Authorization">;
+  authorization?: Header<"Authorization">;
 }
 
 interface ProcessVideoResponse {

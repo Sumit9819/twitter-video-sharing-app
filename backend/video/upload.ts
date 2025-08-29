@@ -5,7 +5,7 @@ import { videoBucket } from "./storage";
 import type { CreateVideoRequest, UploadVideoResponse } from "./types";
 
 interface AuthenticatedCreateVideoRequest extends CreateVideoRequest {
-  authorization: Header<"Authorization">;
+  authorization?: Header<"Authorization">;
 }
 
 // Creates a new video record and returns a signed upload URL.
